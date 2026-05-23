@@ -46,7 +46,7 @@ const MainInput = () => {
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 w-full">
       <div className="bg-white p-6 lg:p-8 group focus-within:outline-none">
         <InputGroup className="border-none">
           {/* Desktop textarea */}

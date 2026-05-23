@@ -21,7 +21,7 @@ export default function Home() {
         </p>
       </div>
       <div className="flex-1 flex flex-col gap-8 justify-end lg:justify-between">
-        <div className="w-full lg:w-[60%] flex items-center">
+        <div className="w-full lg:w-[60%]">
           <MainInput />
         </div>
         <FooterBig />
