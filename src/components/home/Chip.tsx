@@ -1,8 +1,8 @@
 import React from "react";
 
-const Chip = ({ label = "Vector: chipppppp" }) => {
+const Chip = ({ label = "Vector: chipppppp", onClick }: { label?: string; onClick?: () => void }) => {
   return (
-    <div className="inline-flex flex-col items-center group cursor-pointer">
+    <div className="inline-flex flex-col items-center group cursor-pointer" onClick={onClick}>
       {/* Top Trace Line */}
       <div className="w-full h-px overflow-hidden">
         <div

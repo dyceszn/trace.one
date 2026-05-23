@@ -1,19 +1,34 @@
 import React from "react";
 
-const ResultCard = () => {
-  const findings = [
-    "Visual assets align with the scope, yet organic engagement remains below our threshold for verified commerce.",
-    "System detected high identity volatility, including multiple handle transitions within a 90-day window.",
-    "Vector reconciliation failed; provided documentation could not be mapped to an active legal entity.",
-    "Operational void detected. No verifiable transaction resonance found within this specific scope.",
-    "Geospatial inconsistency identified. Communication metadata does not align with stated physical jurisdiction.",
-  ];
+const DEFAULT_FINDINGS = [
+  "Visual assets align with the scope, yet organic engagement remains below our threshold for verified commerce.",
+  "System detected high identity volatility, including multiple handle transitions within a 90-day window.",
+  "Vector reconciliation failed; provided documentation could not be mapped to an active legal entity.",
+  "Operational void detected. No verifiable transaction resonance found within this specific scope.",
+  "Geospatial inconsistency identified. Communication metadata does not align with stated physical jurisdiction.",
+];
+
+export interface ResultData {
+  score: number;
+  confidenceIndex: string;
+  name: string;
+  scope: string;
+  findings: string[];
+}
+
+interface ResultCardProps {
+  /** Analysis result data. Falls back to placeholder values when omitted. */
+  data?: ResultData;
+}
+
+const ResultCard = ({ data }: ResultCardProps) => {
+  const findings = data?.findings?.length ? data.findings : DEFAULT_FINDINGS;
 
   const resultData = {
-    score: 1.5,
-    confidenceIndex: "TRC-9902-X",
-    name: "Shade Anjola",
-    scope: "Professional Hair Merchant",
+    score: data?.score ?? 1.5,
+    confidenceIndex: data?.confidenceIndex ?? "TRC-0000-X",
+    name: data?.name ?? "Entity",
+    scope: data?.scope ?? "Unscoped Analysis",
   };
 
   return (
