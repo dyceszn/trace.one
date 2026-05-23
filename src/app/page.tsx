@@ -12,7 +12,7 @@ export default function Home() {
       </header>
       <img src="/traceone.svg" alt="TraceOne" className="hidden md:block" />
       <img src="/traceone_mobile.svg" alt="TraceOne" className="md:hidden" />
-      <div className=" hidden lg:flex justify-between items-center font-semibold lg:text-3xl  2xl:text-4xl mt-4 mb-14">
+      <div className=" hidden lg:flex justify-between items-center font-semibold lg:text-3xl  2xl:text-4xl mt-4 mb-20">
         <p className="font-semibold text-3xl 2xl:text-4xl leading-[0.9]">
           Confidence begins with a trace.
         </p>
@@ -21,7 +21,7 @@ export default function Home() {
         </p>
       </div>
       <div className="flex-1 flex flex-col gap-8 justify-end lg:justify-between">
-        <div className="w-full lg:w-[60%]">
+        <div className="w-full lg:w-[60%] flex items-center">
           <MainInput />
         </div>
         <FooterBig />

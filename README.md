@@ -2,245 +2,126 @@
 
 > Confidence begins with a trace.
 
-Trace.One is a trust-intelligence web app that lets users submit narrative context about a digital transaction or entity — and receive a structured, streamed AI analysis through the **Trace Engine**. The Engine interrogates the signals, flags anomalies, and synthesises a Confidence Index.
+Trace.one is an AI-native investigative workspace for capturing narratives, evidence, and streamed model outputs in a single traceable environment. It supports rich conversational analysis with branching responses, attachment workflows, and incremental rendering designed for provenance-aware AI collaboration. The app is built around the Trace Engine persona, which reads the prompt, flags signals, and returns a structured assessment.
 
----
+## What It Does
 
-## How It Works
+The current flow is simple:
 
-1. **Home → Chat**: Type a narrative prompt (e.g. "I'm negotiating a ₦2.5M deal with @lux_hairs on Instagram...") and submit it.
-2. **Trace Engine**: The prompt is sent to the streaming API at `/api/chat`, which routes it to a Groq-hosted LLM with a structured investigation persona.
-3. **Signal Spine**: The AI response streams back token-by-token and is rendered in the chat UI in real time, numbered by signal depth.
-4. **Conversation**: Add follow-up context — account details, screenshots, documents — to sharpen the analysis.
-5. **Result**: A Confidence Index and synthesis findings are surfaced on the result page.
+1. The home page accepts an initial prompt and sends the user to `/chat?q=...`.
+2. The chat page auto-submits that prompt into the AI pipeline.
+3. `/api/chat` streams the Trace Engine response back to the client.
+4. The chat UI renders the conversation in real time.
+5. The result route at `/result` renders a dedicated ResultCard view.
 
----
+The app is intentionally ephemeral by default. There is no database layer required to use the core experience.
 
 ## Tech Stack
 
-| Layer | Choice | Reason |
-|---|---|---|
-| Framework | Next.js 16 (App Router) | Server components + streaming API routes |
-| AI SDK | Vercel AI SDK v6 (`ai`) | First-class streaming + `useChat` hook |
-| AI Provider | **Groq** (`@ai-sdk/groq`) | Free tier, fastest inference, streaming support, no OpenAI/Google dependency |
-| Model | `llama-3.3-70b-versatile` | High-quality reasoning, free on Groq's tier |
-| UI | Tailwind CSS v4 + Shadcn components | Pre-existing project components |
-| Streaming renderer | `streamdown` | Streams markdown token-by-token as it arrives |
+| Layer              | Choice                              | Notes                                                      |
+| ------------------ | ----------------------------------- | ---------------------------------------------------------- |
+| Framework          | Next.js 16 App Router               | Server components, route handlers, and client-side chat UI |
+| Language           | TypeScript                          | Strict typed React and API code                            |
+| AI UI              | `@ai-sdk/react` + `ai`              | Chat transport and streaming helpers                       |
+| Provider           | `@ai-sdk/groq`                      | Groq-hosted model access                                   |
+| Model              | `llama-3.3-70b-versatile`           | Used in the chat route                                     |
+| Styling            | Tailwind CSS v4 + custom components | Existing design system and UI primitives                   |
+| Markdown streaming | `streamdown`                        | Used for streamed analysis rendering                       |
 
-### Why Groq?
+## Project Structure
 
-Groq is a hardware-accelerated inference provider hosting open-source models (Llama, Mistral, Gemma, etc.) with an OpenAI-compatible API. Key advantages:
+```text
+src/
+├── app/
+│   ├── page.tsx           # Home screen with the main prompt input
+│   ├── chat/page.tsx      # Chat route that seeds the initial prompt
+│   ├── result/page.tsx    # Dedicated result route with the ResultCard
+│   ├── api/chat/route.ts   # Streaming AI endpoint
+│   └── globals.css         # App-wide theme and font variables
+├── components/
+│   ├── chat/               # Chat interface, prompt input, and message spine
+│   ├── home/               # Home page input and branding helpers
+│   ├── result/             # ResultCard presentation
+│   ├── shared/             # Logo, menu, footer, and other shared UI pieces
+│   ├── ai-elements/        # Low-level AI/streaming UI primitives
+│   └── ui/                 # Reusable design-system components
+└── lib/
+    └── utils.ts            # Shared helpers
+```
 
-- **Free tier** with generous rate limits — no credit card required to start
-- **Fastest public inference** — tokens stream near-instantly, making the Signal Spine feel authentically live
-- **Vercel AI SDK native support** via `@ai-sdk/groq`
-- **No OpenAI or Google dependency** — satisfies the project constraint
-- **Easy provider swap** — changing providers is a one-line change in the API route
+## User Flow
 
-**Fallback option:** For fully local inference, use Ollama (`ollama pull llama3.2`) with `@ai-sdk/openai-compatible` pointed at `http://localhost:11434/v1`. See [Switching Providers](#switching-providers) below.
+### Home
 
----
+The home page is defined in [src/app/page.tsx](src/app/page.tsx). It presents the landing layout, branding, and the main input. The input component in [src/components/home/MainInput.tsx](src/components/home/MainInput.tsx) pushes the user into the chat route with the prompt encoded in the query string.
+
+### Chat
+
+The chat page in [src/app/chat/page.tsx](src/app/chat/page.tsx) reads the query param, decodes it, and passes it into [src/components/chat/ChatInterface.tsx](src/components/chat/ChatInterface.tsx). That component wires `useChat` to the API route, auto-submits the initial prompt, and renders:
+
+- the conversation transcript
+- the streaming engine bubble
+- the prompt input for follow-up context
+
+The message stack is rendered by [src/components/chat/SignalSpine.tsx](src/components/chat/SignalSpine.tsx), while [src/components/chat/EngineBubble.tsx](src/components/chat/EngineBubble.tsx) and [src/components/chat/UserBubble.tsx](src/components/chat/UserBubble.tsx) handle the visual styles for assistant and user messages.
+
+### Result
+
+The result page in [src/app/result/page.tsx](src/app/result/page.tsx) renders [src/components/result/ResultCard.tsx](src/components/result/ResultCard.tsx). That card is the dedicated synthesis view for the final assessment experience.
+
+## AI Pipeline
+
+The AI endpoint in [src/app/api/chat/route.ts](src/app/api/chat/route.ts) does the following:
+
+- accepts the chat message array from the client
+- converts UI messages to model messages
+- calls Groq through the Vercel AI SDK
+- streams the response back as a UI message stream response
+
+The system prompt describes the Trace Engine persona: terse, analytical, objective, and focused on signals rather than speculation.
+
+## Fonts and Visual System
+
+The app loads its global fonts in [src/app/layout.tsx](src/app/layout.tsx) and maps the brand font token in [src/app/globals.css](src/app/globals.css). The branding leans on a custom display font for the Trace.One identity and Raleway for general UI text.
+
+## Environment Variables
+
+| Variable                        | Required | Purpose                                         |
+| ------------------------------- | -------- | ----------------------------------------------- |
+| `GROQ_API_KEY`                  | Yes      | Required for the chat route to stream responses |
+| `NEXT_PUBLIC_SUPABASE_URL`      | No       | Reserved for future persistence work            |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | No       | Reserved for future persistence work            |
 
 ## Local Development
 
 ### Prerequisites
 
 - Node.js 18+
-- A [Groq API key](https://console.groq.com) (free, no credit card needed)
+- A Groq API key
 
 ### Setup
 
 ```bash
-# 1. Clone and install
-git clone <repo-url>
-cd trace.one
 npm install
-
-# 2. Environment variables
-cp .env.local.example .env.local
-# Open .env.local and paste your GROQ_API_KEY
-
-# 3. Start the dev server
+touch .env.local
 npm run dev
 ```
 
+Add at least `GROQ_API_KEY=...` to `.env.local` before starting the app.
+
 Open [http://localhost:3000](http://localhost:3000) and start a trace.
 
----
+## Scripts
 
-## Environment Variables
+| Command         | Purpose                      |
+| --------------- | ---------------------------- |
+| `npm run dev`   | Start the development server |
+| `npm run build` | Build for production         |
+| `npm run start` | Start the production server  |
+| `npm run lint`  | Run ESLint                   |
 
-| Variable | Required | Description |
-|---|---|---|
-| `GROQ_API_KEY` | **Yes** | API key from [console.groq.com](https://console.groq.com). Free tier available. |
-| `NEXT_PUBLIC_SUPABASE_URL` | No | Optional — for future persistent storage via Supabase |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | No | Optional — for future persistent storage via Supabase |
+## Notes
 
-Copy `.env.local.example` to `.env.local` and fill in the values.
-
----
-
-## Architecture
-
-```
-src/
-├── app/
-│   ├── page.tsx                  # Home — prompt input, navigates to /chat?q=...
-│   ├── chat/
-│   │   └── page.tsx              # Chat page (server) — reads ?q= param, passes to ChatInterface
-│   ├── result/
-│   │   └── page.tsx              # Result — Confidence Index + synthesis findings
-│   └── api/
-│       └── chat/
-│           └── route.ts          # Streaming POST endpoint (Groq + Trace Engine persona)
-│
-├── components/
-│   ├── chat/
-│   │   ├── ChatInterface.tsx     # useChat wiring, auto-submits initial prompt
-│   │   ├── CustomPromptInput.tsx # Follow-up input with file/screenshot attachment support
-│   │   ├── SignalSpine.tsx       # Renders message list with numbered engine bubbles
-│   │   ├── EngineBubble.tsx      # Streaming assistant message with typing animation
-│   │   └── UserBubble.tsx        # User message display
-│   ├── home/
-│   │   ├── MainInput.tsx         # Home prompt form → router.push('/chat?q=<prompt>')
-│   │   └── Chip.tsx              # Example prompt chips with click-to-fill
-│   └── ai-elements/              # Low-level AI UI primitives (message, conversation, etc.)
-```
-
-### Data Flow
-
-```
-Home page
-  └─ User types prompt
-  └─ Submit → router.push('/chat?q=<encoded-prompt>')
-
-Chat page (server component)
-  └─ Awaits searchParams.q
-  └─ Passes initialPrompt to <ChatInterface>
-
-ChatInterface (client component, "use client")
-  └─ useChat({ api: '/api/chat' })
-  └─ On mount: append({ role: 'user', content: initialPrompt })
-  └─ Renders <SignalSpine messages={messages} status={status} />
-  └─ Renders <CustomPromptInput onSubmit={handleNewMessage} status={status} />
-
-/api/chat (POST, streaming)
-  └─ Receives messages[]
-  └─ streamText({ model: groq('llama-3.3-70b-versatile'), system: SYSTEM_PROMPT, messages })
-  └─ Returns DataStreamResponse (Vercel AI SDK protocol)
-
-Client useChat hook
-  └─ Reads the data stream
-  └─ Updates messages[] incrementally as tokens arrive
-  └─ SignalSpine re-renders with each update → smooth streaming
-```
-
-### Session & Storage
-
-All conversation data is **ephemeral by default**. `useChat` holds messages in React state; nothing is written to a database. This is intentional:
-
-- No user data is stored server-side between requests
-- Sessions are scoped to the browser tab lifetime
-- To add persistence later: add a `onFinish` callback in the API route to write to Supabase
-
----
-
-## Streaming
-
-The `/api/chat` route uses `streamText` from the Vercel AI SDK and returns a `DataStreamResponse`. The `useChat` hook reads this stream and updates `messages` incrementally as tokens arrive.
-
-`SignalSpine` passes `isStreaming={true}` to the active `EngineBubble` while status is `"streaming"` or `"submitted"`. `EngineBubble` passes this to `MessageResponse` (via `streamdown`), which animates text as tokens arrive.
-
-When the user submits a follow-up, they can also stop the stream at any time using the stop button (square icon) that replaces the send button during streaming.
-
----
-
-## Switching Providers
-
-The AI provider is isolated to `src/app/api/chat/route.ts`. Swap providers by replacing the import and model call:
-
-### Anthropic Claude
-
-```bash
-npm install @ai-sdk/anthropic
-```
-
-```ts
-import { createAnthropic } from "@ai-sdk/anthropic";
-const anthropic = createAnthropic();
-// in handler:
-model: anthropic("claude-3-5-haiku-20241022"),
-```
-
-Add `ANTHROPIC_API_KEY` to `.env.local`.
-
-### Mistral
-
-```bash
-npm install @ai-sdk/mistral
-```
-
-```ts
-import { createMistral } from "@ai-sdk/mistral";
-const mistral = createMistral();
-model: mistral("mistral-small-latest"),
-```
-
-### Ollama (fully local, free)
-
-```bash
-ollama pull llama3.2
-npm install @ai-sdk/openai-compatible
-```
-
-```ts
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-const ollama = createOpenAICompatible({ baseURL: "http://localhost:11434/v1", name: "ollama" });
-model: ollama("llama3.2"),
-```
-
-No API key needed. No rate limits.
-
----
-
-## Deployment
-
-### Vercel (recommended)
-
-```bash
-npm i -g vercel
-vercel
-```
-
-Set `GROQ_API_KEY` in the Vercel project dashboard under Settings → Environment Variables.
-
-### Other Platforms
-
-```bash
-npm run build
-npm start
-```
-
-Set `GROQ_API_KEY` in the environment. Requires Node.js 18+. No database required by default.
-
----
-
-## Database (Optional)
-
-The app works without a database. To add persistence for traces:
-
-1. Set up a [Supabase](https://supabase.com) project
-2. Add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` to `.env.local`
-3. In `src/app/api/chat/route.ts`, add an `onFinish` callback to `streamText`:
-
-```ts
-const result = streamText({
-  model: ...,
-  messages,
-  onFinish: async ({ text }) => {
-    // write to Supabase here
-  },
-});
-```
-
-The local pgAdmin 17 setup is fully compatible with Supabase's PostgreSQL schema conventions.
+- The core chat experience is streamed and browser-local by default.
+- The result route is separate from the chat route, so navigation is what exposes the ResultCard view.
+- The project currently favors a lightweight, direct flow over a persistence-heavy architecture.
